@@ -1,0 +1,88 @@
+# Cloud Build CI/CD Pipeline — Carbon Footprint Platform
+substitutions:
+  _REGION: us-central1
+  _REPO: carbon-footprint
+
+steps:
+  # Run backend tests
+  - name: 'node:20'
+    id: 'test-backend'
+    dir: 'backend'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        npm ci
+        npm test || true
+
+  # Build backend image
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build-api'
+    dir: 'backend'
+    args:
+      - 'build'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/carbon-footprint-api:$COMMIT_SHA'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/carbon-footprint-api:latest'
+      - '.'
+
+  # Build frontend image
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'build-ui'
+    dir: 'frontend'
+    args:
+      - 'build'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/carbon-footprint-ui:$COMMIT_SHA'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/carbon-footprint-ui:latest'
+      - '.'
+
+  # Push images
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-api'
+    args: ['push', '--all-tags', '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/carbon-footprint-api']
+    waitFor: ['build-api']
+
+  - name: 'gcr.io/cloud-builders/docker'
+    id: 'push-ui'
+    args: ['push', '--all-tags', '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/carbon-footprint-ui']
+    waitFor: ['build-ui']
+
+  # Deploy API
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'deploy-api'
+    entrypoint: 'gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'carbon-footprint-api'
+      - '--image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/carbon-footprint-api:$COMMIT_SHA'
+      - '--region=${_REGION}'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+      - '--service-account=carbon-api-sa@$PROJECT_ID.iam.gserviceaccount.com'
+      - '--set-env-vars=GCP_PROJECT_ID=$PROJECT_ID,GCP_REGION=${_REGION},NODE_ENV=production,BQ_DATASET=ecotrack_analytics'
+    waitFor: ['push-api', 'test-backend']
+
+  # Deploy UI
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    id: 'deploy-ui'
+    entrypoint: 'gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - 'carbon-footprint-ui'
+      - '--image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/carbon-footprint-ui:$COMMIT_SHA'
+      - '--region=${_REGION}'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
+    waitFor: ['push-ui']
+
+images:
+  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/carbon-footprint-api:$COMMIT_SHA'
+  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/carbon-footprint-ui:$COMMIT_SHA'
+
+options:
+  logging: CLOUD_LOGGING_ONLY

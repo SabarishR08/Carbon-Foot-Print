@@ -1,0 +1,13 @@
+{
+  "name": "carbon-processor",
+  "version": "1.0.0",
+  "main": "index.js",
+  "engines": { "node": "20" },
+  "dependencies": {
+    "@google-cloud/bigquery": "^7.3.0",
+    "@google-cloud/firestore": "^7.3.1",
+    "@google-cloud/functions-framework": "^3.3.0",
+    "@google-cloud/pubsub": "^4.3.3",
+    "@google-cloud/vertexai": "^1.1.0"
+  }
+}

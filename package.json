@@ -1,0 +1,36 @@
+{
+  "name": "carbon-footprint-platform",
+  "version": "1.0.0",
+  "private": true,
+  "packageManager": "npm@9",
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "description": "Carbon Footprint Awareness Platform - Monorepo for Cloud Run",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && npm run dev",
+    "build": "cd frontend && npm install && npm run build",
+    "test": "jest --coverage --forceExit",
+    "test:unit": "jest tests/unit --coverage",
+    "test:integration": "jest tests/integration --forceExit",
+    "test:e2e": "playwright test --config=tests/playwright.config.js",
+    "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install",
+    "lint": "cd frontend && npm run lint"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "supertest": "^6.3.4",
+    "@playwright/test": "^1.42.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": ["**/tests/**/*.test.js"],
+    "collectCoverageFrom": ["backend/src/**/*.js", "!backend/src/index.js"],
+    "coverageDirectory": "coverage"
+  }
+}
