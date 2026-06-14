@@ -26,10 +26,17 @@ export default defineConfig({
     // Split vendor chunk for better caching
     rollupOptions: {
       output: {
-        manualChunks: {
-          vendor: ["react", "react-dom", "react-router-dom"],
-          charts: ["recharts"],
-          firebase: ["firebase/app", "firebase/auth", "firebase/firestore"],
+        manualChunks(id) {
+          if (id.includes('node_modules/react') || id.includes('node_modules/react-dom') || id.includes('node_modules/react-router-dom')) {
+            return 'vendor';
+          }
+          if (id.includes('node_modules/recharts')) {
+            return 'charts';
+          }
+          if (id.includes('node_modules/firebase') || id.includes('node_modules/@firebase')) {
+            return 'firebase';
+          }
+          return undefined;
         },
       },
     },

@@ -2,18 +2,18 @@
 substitutions:
   _REGION: us-central1
   _REPO: carbon-footprint
+  _IMAGE_TAG: manual
 
 steps:
   # Run backend tests
-  - name: 'node:20'
+  - name: 'node:22'
     id: 'test-backend'
-    dir: 'backend'
     entrypoint: 'bash'
     args:
       - '-c'
       - |
         npm ci
-        npm test || true
+        npm test -- --runInBand
 
   # Build backend image
   - name: 'gcr.io/cloud-builders/docker'
@@ -22,7 +22,7 @@ steps:
     args:
       - 'build'
       - '-t'
-      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/carbon-footprint-api:$COMMIT_SHA'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/carbon-footprint-api:${_IMAGE_TAG}'
       - '-t'
       - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/carbon-footprint-api:latest'
       - '.'
@@ -34,7 +34,7 @@ steps:
     args:
       - 'build'
       - '-t'
-      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/carbon-footprint-ui:$COMMIT_SHA'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/carbon-footprint-ui:${_IMAGE_TAG}'
       - '-t'
       - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/carbon-footprint-ui:latest'
       - '.'
@@ -58,7 +58,7 @@ steps:
       - 'run'
       - 'deploy'
       - 'carbon-footprint-api'
-      - '--image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/carbon-footprint-api:$COMMIT_SHA'
+      - '--image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/carbon-footprint-api:${_IMAGE_TAG}'
       - '--region=${_REGION}'
       - '--platform=managed'
       - '--allow-unauthenticated'
@@ -74,15 +74,15 @@ steps:
       - 'run'
       - 'deploy'
       - 'carbon-footprint-ui'
-      - '--image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/carbon-footprint-ui:$COMMIT_SHA'
+      - '--image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/carbon-footprint-ui:${_IMAGE_TAG}'
       - '--region=${_REGION}'
       - '--platform=managed'
       - '--allow-unauthenticated'
     waitFor: ['push-ui']
 
 images:
-  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/carbon-footprint-api:$COMMIT_SHA'
-  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/carbon-footprint-ui:$COMMIT_SHA'
+  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/carbon-footprint-api:${_IMAGE_TAG}'
+  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPO}/carbon-footprint-ui:${_IMAGE_TAG}'
 
 options:
   logging: CLOUD_LOGGING_ONLY

@@ -1,7 +1,7 @@
 'use strict';
 
 const express = require('express');
-const { v4: uuidv4 } = require('uuid');
+const { randomUUID } = require('crypto');
 const { getDb } = require('../config/firebase');
 const { validate, activitySchema } = require('../middleware/validate');
 const { calculateEmissions } = require('../services/carbonCalculator');
@@ -30,7 +30,7 @@ router.post('/', validate(activitySchema), async (req, res, next) => {
     const emission = calculateEmissions(category, subtype, value, unit);
 
     const activity = {
-      id: uuidv4(),
+      id: randomUUID(),
       userId: req.user.uid,
       category,
       subtype,
@@ -46,16 +46,20 @@ router.post('/', validate(activitySchema), async (req, res, next) => {
 
     await getDb().collection('activities').doc(activity.id).set(activity);
 
-    await publishCarbonEvent('carbon.record.created', {
-      userId: req.user.uid,
-      activityId: activity.id,
-      category,
-      subtype,
-      co2eKg: emission.co2e,
-      value,
-      unit,
-      recordedAt: activity.date,
-    });
+    try {
+      await publishCarbonEvent('carbon.record.created', {
+        userId: req.user.uid,
+        activityId: activity.id,
+        category,
+        subtype,
+        co2eKg: emission.co2e,
+        value,
+        unit,
+        recordedAt: activity.date,
+      });
+    } catch (pubsubErr) {
+      logger.warn('Pub/Sub publish failed (non-blocking):', pubsubErr.message);
+    }
 
     const streak = await updateStreak(req.user.uid);
     const level = await awardPoints(req.user.uid, 10, 'activity_logged');

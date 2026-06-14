@@ -26,7 +26,7 @@ router.get('/tips', async (req, res, next) => {
     const recentActivities = actSnap.docs.map((d) => d.data());
 
     const tips = await getPersonalizedTips(req.user.uid, profile, recentActivities);
-    await awardPoints(req.user.uid, 5, 'ai_tips');
+    try { await awardPoints(req.user.uid, 5, 'ai_tips'); } catch (_) { /* non-blocking */ }
     res.json(tips);
   } catch (err) {
     next(err);
@@ -36,7 +36,7 @@ router.get('/tips', async (req, res, next) => {
 router.post('/scenario', validate(scenarioSchema), async (req, res, next) => {
   try {
     const result = await runScenarioSimulation(req.user.uid, req.body.scenario);
-    await awardPoints(req.user.uid, 15, 'scenario_simulation');
+    try { await awardPoints(req.user.uid, 15, 'scenario_simulation'); } catch (_) { /* non-blocking */ }
     res.json(result);
   } catch (err) {
     next(err);

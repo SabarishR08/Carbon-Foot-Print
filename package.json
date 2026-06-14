@@ -9,7 +9,7 @@
   ],
   "description": "Carbon Footprint Awareness Platform - Monorepo for Cloud Run",
   "engines": {
-    "node": ">=20.0.0"
+    "node": ">=22.0.0"
   },
   "scripts": {
     "dev:frontend": "cd frontend && npm run dev",

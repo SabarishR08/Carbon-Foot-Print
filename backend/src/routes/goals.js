@@ -1,7 +1,7 @@
 'use strict';
 
 const express = require('express');
-const { v4: uuidv4 } = require('uuid');
+const { randomUUID } = require('crypto');
 const { getDb } = require('../config/firebase');
 const { validate, goalSchema } = require('../middleware/validate');
 const { awardPoints } = require('../services/gamificationService');
@@ -23,7 +23,7 @@ router.get('/', async (req, res, next) => {
 router.post('/', validate(goalSchema), async (req, res, next) => {
   try {
     const goal = {
-      id: uuidv4(),
+      id: randomUUID(),
       userId: req.user.uid,
       ...req.body,
       status: 'active',

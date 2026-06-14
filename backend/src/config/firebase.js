@@ -5,7 +5,10 @@
 
 'use strict';
 
-const admin = require('firebase-admin');
+const { initializeApp, getApps, cert, applicationDefault } = require('firebase-admin/app');
+const { getFirestore: fbGetFirestore } = require('firebase-admin/firestore');
+const { getAuth: fbGetAuth } = require('firebase-admin/auth');
+const { getStorage: fbGetStorage } = require('firebase-admin/storage');
 const { logger } = require('./logger');
 
 let db = null;
@@ -13,24 +16,24 @@ let auth = null;
 let storage = null;
 
 function initFirebase() {
-  if (admin.apps.length > 0) return;
+  if (getApps().length > 0) return;
 
   try {
     // On GCP (Cloud Run), ADC is used automatically.
     // Locally, set GOOGLE_APPLICATION_CREDENTIALS env var.
     const credential = process.env.FIREBASE_SERVICE_ACCOUNT
-      ? admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT))
-      : admin.credential.applicationDefault();
+      ? cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT))
+      : applicationDefault();
 
-    admin.initializeApp({
+    initializeApp({
       credential,
       projectId: process.env.GCP_PROJECT_ID,
       storageBucket: `${process.env.GCP_PROJECT_ID}.appspot.com`,
     });
 
-    db = admin.firestore();
-    auth = admin.auth();
-    storage = admin.storage();
+    db = fbGetFirestore();
+    auth = fbGetAuth();
+    storage = fbGetStorage();
 
     // Firestore settings
     db.settings({ ignoreUndefinedProperties: true });
@@ -57,4 +60,4 @@ function getStorage() {
   return storage;
 }
 
-module.exports = { initFirebase, getDb, getAuth, getStorage, admin };
+module.exports = { initFirebase, getDb, getAuth, getStorage };
